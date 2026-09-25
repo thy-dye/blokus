@@ -1,104 +1,126 @@
 open! Core
 
-type player_kind =
-  | X
-  | O
+(*************************************************)
+(*              Declarations of Types            *)
+(*************************************************)
 
-type cell_position =
-  { row : int
-  ; column : int
+type color =
+  | Red
+  | Blue
+  | Green
+  | Yellow
+
+type coordinate =
+  { r : int
+  ; c : int
+  }
+
+(* Defining what a Piece is *)
+type piece = coordinate list
+
+type pieces =
+  { one_tile : piece list
+  ; two_tile : piece list
+  ; three_tile : piece list
+  ; four_tile : piece list
+  ; five_tile : piece list
+  }
+(* will be used for the question isValidMoveAvail? *)
+
+(* Defining the Game State and Players *)
+type player =
+  { color : color
+  ; remaining_pieces : pieces
+  ; tiles : int
   }
 
 type decision =
-  | In_progress of { whose_turn : player_kind }
-  | Winner of player_kind
+  | In_progress of { whose_turn : player }
+  | Winner of player
   | Stalemate
 
+(* figure out later if i want a new gamestate each time or mutate it *)
 type game_state =
-  { board : (cell_position * player_kind) list
-  ; rows : int
+  { rows : int
   ; columns : int
-  ; winning_sequence_length : int
+  ; mutable board : color option array array
   ; decision : decision
+  ; players : player list
+    (* add players to the game state *)
+    (* everything should be in the game state *)
   }
+(*************************************************)
+(*           Initialization of variables         *)
+(*************************************************)
 
-type move = cell_position
+(* hardcoded pieces since they are constant per game *)
+let all_pieces = {
+ one_tile = [ 
+  [{r=0; c=0}]; 
+ ]; 
+ two_tile = [
+  [{r=0; c=0}; {r=0; c=1}];
+ ];
+ three_tile = [
+  [{r=0; c=0}; {r=0; c=1}; {r=0; c=2}];
+  [{r=0; c=0}; {r=0; c=1}; {r=1; c=1}];
+ ];
+ four_tile = [
+  [{r=0; c=0}; {r=0; c=1}; {r=0; c=2}; {r=0; c=3};];
+  [{r=0; c=0}; {r=0; c=1}; {r=0; c=2}; {r=1; c=2};];
+  [{r=0; c=0}; {r=0; c=1}; {r=0; c=2}; {r=1; c=1};];
+  [{r=0; c=0}; {r=0; c=1}; {r=1; c=1}; {r=1; c=0};];
+  [{r=0; c=0}; {r=1; c=0}; {r=1; c=1}; {r=2; c=1};];
+ ];
+ five_tile = [
+  [{r=0; c=0}; {r=0; c=1}; {r=0; c=2}; {r=0; c=3}; {r=0; c=4};];
+  [{r=0; c=0}; {r=0; c=1}; {r=0; c=2}; {r=1; c=2}; {r=2; c=2};];
+  [{r=0; c=0}; {r=0; c=1}; {r=0; c=2}; {r=0; c=3}; {r=1; c=1};];
+  [{r=0; c=0}; {r=0; c=1}; {r=0; c=2}; {r=(-1); c=1}; {r=1; c=1};];
+  [{r=0; c=0}; {r=1; c=0}; {r=1; c=1}; {r=2; c=1}; {r=2; c=2};];
+  [{r=0; c=0}; {r=0; c=1}; {r=0; c=2}; {r=0; c=3}; {r=1; c=3};];
+  [{r=0; c=0}; {r=1; c=0}; {r=1; c=1}; {r=2; c=1}; {r=3; c=1};];
+  [{r=0; c=0}; {r=0; c=1}; {r=1; c=1}; {r=2; c=1}; {r=2; c=2};];
+  [{r=0; c=0}; {r=0; c=1}; {r=1; c=1}; {r=2; c=1}; {r=1; c=2};];
+  [{r=0; c=0}; {r=0; c=1}; {r=1; c=1}; {r=2; c=1}; {r=1; c=0};];
+  [{r=0; c=0}; {r=0; c=1}; {r=1; c=0}; {r=2; c=0}; {r=2; c=1};];
+  [{r=0; c=0}; {r=0; c=1}; {r=0; c=2}; {r=1; c=2}; {r=(-1); c=2};];
+ ];
+}
 
-(*=
- | |
------
- | |
------
- | |
-*)
-let initial_state : game_state =
-  { board = []
-  ; rows = 3
-  ; columns = 3
-  ; winning_sequence_length = 3
-  ; decision = In_progress { whose_turn = X }
-  }
-;;
+let red_player : player =
+{
+  color = Red;
+  remaining_pieces = all_pieces; (*remaining_pieces*)
+  tiles = 89;
+}
 
-let move_at_0x0 : move = { row = 0; column = 0 }
+let blue_player : player =
+{
+  color = Blue;
+  remaining_pieces = all_pieces;
+  tiles = 89;
+}
 
-(*=
-X| |
------
- | |
------
- | |
-*)
-let state_after_move_at_0x0 : game_state =
-  { board = [ move_at_0x0, X ]
-  ; rows = 3
-  ; columns = 3
-  ; winning_sequence_length = 3
-  ; decision = In_progress { whose_turn = O }
-  }
-;;
+let green_player : player =
+{
+  color = Green;
+  remaining_pieces = all_pieces;
+  tiles = 89;
+}
 
-(*=
- | |X
------
-O|O|X
------
- | |
-*)
-let before_terminal_state : game_state =
-  { board =
-      [ { row = 0; column = 2 }, X
-      ; { row = 1; column = 0 }, O
-      ; { row = 1; column = 2 }, X
-      ; { row = 1; column = 1 }, O
-      ]
-  ; rows = 3
-  ; columns = 3
-  ; winning_sequence_length = 3
-  ; decision = In_progress { whose_turn = X }
-  }
-;;
+let yellow_player : player =
+{
+  color = Yellow;
+  remaining_pieces = all_pieces;
+  tiles = 89;
+}
 
-let move_to_terminal_state : move = { row = 2; column = 2 }
-
-(*=
- | |X
------
-O|O|X
------
- | |X
-*)
-let terminal_state : game_state =
-  { board =
-      [ { row = 0; column = 2 }, X
-      ; { row = 1; column = 0 }, O
-      ; { row = 1; column = 2 }, X
-      ; { row = 1; column = 1 }, O
-      ; { row = 2; column = 2 }, X
-      ]
-  ; rows = 3
-  ; columns = 3
-  ; winning_sequence_length = 3
-  ; decision = Winner X
-  }
-;;
+let initial : game_state =
+{
+  rows = 20;
+  columns = 20;
+  board = Array.make_matrix ~dimx:20 ~dimy:20 None;
+  decision = In_progress { whose_turn = red_player };
+  players = [red_player; blue_player; green_player; yellow_player]
+}
