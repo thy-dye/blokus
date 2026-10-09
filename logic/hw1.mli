@@ -37,7 +37,7 @@ type decision =
 type game_state =
   { rows : int
   ; columns : int
-  ; mutable board : color option array array
+  ; board : color option array array
   ; decision : decision
   ; players : player list
   }
